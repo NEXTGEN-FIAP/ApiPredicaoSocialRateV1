@@ -1,5 +1,5 @@
 import requests
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from joblib import load
 
 
@@ -12,6 +12,12 @@ async def root():
     return {"message": "Hello World"}
 
 @app.post("/modelo-predicao")
-async def post():
-    dados = await requests.json()
-    return {"message": "Hello Post"}
+async def post(request: Request):
+    data = await request.json()
+    nicho = data.get("nicho")
+    publico_alvo = data.get("publicoAlvoCampanha")
+    genero_alvo = data.get("generoAlvoCampanha")
+    interesses = data.get("interessesDoPublico")
+    canal_campanha = data.get("canalDaCampanha")
+    alcance_campanha = data.get("alcanceDaCampanha")
+    return {"message": data["nicho"]}
