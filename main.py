@@ -2,6 +2,7 @@ import numpy as np
 from fastapi import FastAPI, Request
 import pandas as pd
 import joblib
+import os
 
 app = FastAPI()
 
@@ -19,11 +20,23 @@ async def post(request: Request):
         'alcanceDaCampanha': np.array([data.get("alcanceDaCampanha")])
     })
 
-    # Carregar o modelo treinado
-    modelo = joblib.load("modelo_match_influencer.pkl")
+    modelo_path = "modelo_match_influencer.pkl"
+    columns_path = "X_train_columns.pkl"
 
-    # Carregar as colunas usadas no treinamento do modelo
-    X_train_columns = joblib.load("X_train_columns.pkl")
+    if not os.path.exists(modelo_path) or not os.path.exists(columns_path):
+        return {"message": "Modelo ou colunas de treinamento não encontradas"}
+
+    try:
+        # Carregar o modelo treinado
+        modelo = joblib.load(modelo_path)
+    except Exception as e:
+        return {"message": f"Erro ao carregar o modelo: {str(e)}"}
+
+    try:
+        # Carregar as colunas usadas no treinamento do modelo
+        X_train_columns = joblib.load(columns_path)
+    except Exception as e:
+        return {"message": f"Erro ao carregar as colunas de treinamento: {str(e)}"}
 
     # Converter variáveis categóricas em variáveis dummy
     novos_dados_dummificados = pd.get_dummies(novos_dados)
@@ -31,7 +44,10 @@ async def post(request: Request):
     # Garantir que as colunas nos novos dados sejam as mesmas que as usadas durante o treinamento
     novos_dados_dummificados = novos_dados_dummificados.reindex(columns=X_train_columns, fill_value=0)
 
-    previsoes = modelo.predict(novos_dados_dummificados)
+    try:
+        previsoes = modelo.predict(novos_dados_dummificados)
+    except Exception as e:
+        return {"message": f"Erro ao fazer a previsão: {str(e)}"}
 
     # Ensure previsoes is a simple value before returning
     if not isinstance(previsoes, (str, int, float, bool)):
